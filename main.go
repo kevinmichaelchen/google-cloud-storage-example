@@ -46,6 +46,23 @@ func getCredentials() JsonCredentials {
 	return result
 }
 
+func getPemBytes() []byte {
+	path, ok := os.LookupEnv("GC_PEM_FILE")
+	if !ok {
+		log.Fatalf("Environment variable GC_PEM_FILE must be path to PEM file")
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatalf("No file found at: %s", path)
+	}
+	defer f.Close()
+	byteValue, err := ioutil.ReadAll(f)
+	if err != nil {
+		log.Fatalf("Could not read file at: %s", path)
+	}
+	return byteValue
+}
+
 func main() {
 	credentials := getCredentials()
 	projectID := credentials.ProjectID
@@ -80,22 +97,31 @@ func main() {
 	ctx = context.Background()
 	r, f := readerFromFile("./dog.txt")
 	defer f.Close()
-	_, _, err = upload(bh, ctx, r, "iris/dog.txt", true)
-	if err != nil {
-		log.Fatalf("Failed to upload to bucket: %v", err)
-	}
+	//_, _, err = upload(bh, ctx, r, "iris/dog.txt", true)
+	//if err != nil {
+	//	log.Fatalf("Failed to upload to bucket: %v", err)
+	//}
 
 	url, err := storage.SignedURL(bucketName, "iris/dog.txt", &storage.SignedURLOptions{
 		GoogleAccessID: serviceAccountEmailAddress,
 		Method:         http.MethodPut,
 		Expires:        time.Now().Add(2 * time.Minute),
 		PrivateKey:     []byte(credentials.PrivateKey),
+		//PrivateKey:     getPemBytes(),
 	})
 	if err != nil {
 		log.Fatalf("Could not make signed url: %v", err)
 	} else {
 		log.Printf("Created signed url: %s", url)
 	}
+
+	httpClient := &http.Client{}
+	req, err := http.NewRequest(http.MethodPut, url, r)
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Fatalf("Could not make request: %v", err)
+	}
+	log.Println("Status is:", res.Status)
 }
 
 func bucketExists(bh *storage.BucketHandle) bool {
