@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	projectID := os.Getenv("DATASTORE_PROJECT_ID")
+	projectID := os.Getenv("STORAGE_PROJECT_ID")
 	if projectID == "" {
-		log.Fatal(`You need to set the environment variable "DATASTORE_PROJECT_ID"`)
+		log.Fatal(`You need to set the environment variable "STORAGE_PROJECT_ID"`)
 	}
 
 	ctx := context.Background()
