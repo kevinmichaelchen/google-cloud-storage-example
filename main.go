@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"encoding/json"
 	"io"
@@ -10,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"cloud.google.com/go/storage"
 )
 
 type JsonCredentials struct {
@@ -84,11 +85,17 @@ func main() {
 		log.Fatalf("Failed to upload to bucket: %v", err)
 	}
 
-	storage.SignedURL(bucketName, "iris/dog.txt", &storage.SignedURLOptions{
+	url, err := storage.SignedURL(bucketName, "iris/dog.txt", &storage.SignedURLOptions{
 		GoogleAccessID: serviceAccountEmailAddress,
 		Method:         http.MethodPut,
 		Expires:        time.Now().Add(2 * time.Minute),
+		PrivateKey:     []byte(credentials.PrivateKey),
 	})
+	if err != nil {
+		log.Fatalf("Could not make signed url: %v", err)
+	} else {
+		log.Printf("Created signed url: %s", url)
+	}
 }
 
 func bucketExists(bh *storage.BucketHandle) bool {
